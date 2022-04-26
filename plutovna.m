@@ -1,18 +1,22 @@
 
 txt = "";
-help_prompt = "Please Enter VNA Mode: \nH: Help\nX: Exit\nT: Thru Calibration\nR: Reflect Calibration\nL: Line Calibration\nQ: Measurement\n";
+help_prompt = "Please Enter VNA Mode: \nH: Help\nX: Exit\nC: Calibration\nS: S-Parameter Measurement\n";
 prompt = help_prompt;
+phase_offset = 0;
+freq_range = [1.5e9 1.6e9];
+bw = 10e6;
+samples_per_frame = 2e4;
 while(upper(txt) ~= "X")
     txt = upper(input(prompt,"s"));
     switch(txt)
-        case "T"
-            disp('Starting Thru Calibration')
-        case "R"
-            disp('Starting Refelct Calibration')
-        case "L"
-            disp('Starting Line Calibration')
-        case "Q"
+        case "C"
+            disp('Starting Calibration')
+        case "S"
             disp('Starting Measurement Mode')
+            [freq, mag, phase] = capture(freq_range, bw);
+            plot(freq, mag, 'r');
+            %hold on
+            %plot(freq, phase, 'b');
         case "X"
             disp('Exiting PlutoVNA Application')
         case "H"
