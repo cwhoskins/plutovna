@@ -5,41 +5,46 @@ function [freq,mag,pha] = capture(freq_range,bw)
 min_center_freq = freq_range(1);
 max_center_freq = freq_range(2);
 samples_per_frame = 2e4;
-overlap = 4;
 %Connect to PLUTO
 tx = sdrtx('Pluto','RadioID','usb:0','CenterFrequency',freq_range(1),'BasebandSampleRate',bw,'Gain',-10);
-rx=sdrrx('Pluto','RadioID', 'usb:0','OutputDataType','double','BasebandSampleRate', bw, 'SamplesPerFrame',samples_per_frame, 'GainSource','AGC Slow Attack');   
-configurePlutoRadio('AD9364','usb:0');
-steps = ceil((max_center_freq -min_center_freq) / (bw/overlap)) - (overlap-1);
-span = ceil((max_center_freq -min_center_freq) / bw);
+rx=sdrrx(   'Pluto','RadioID', 'usb:0','OutputDataType','double',...
+            'BasebandSampleRate', bw, 'SamplesPerFrame',samples_per_frame,...
+            'GainSource','Manual', 'Gain', 20);   
+steps = ceil((max_center_freq -min_center_freq) / bw);
 center_freq = min_center_freq;
-mag = zeros((samples_per_frame*span),1);
-pha = zeros((samples_per_frame*span),1);
+mag = zeros(steps,1);
+pha = zeros(steps,1);
+sine = dsp.SineWave('Frequency',5e3,...
+                    'SampleRate',bw,...
+                    'SamplesPerFrame', samples_per_frame,...
+                    'ComplexOutput', true);
 % Receive and view sine
 for k=1:steps
     % Update LO Frequency
-    release(tx)
     tx.CenterFrequency = center_freq;
-    transmitRepeat(tx, complex(ones(samples_per_frame,1)));
     rx.CenterFrequency = center_freq;
-    % Capture data from PLUTO
-    sig = fft(rx());
-    % Remove DC Component
-    sig(1) = sig(2);
-    sig = fftshift(sig);
-    cur_mag = abs(sig);
-    cur_pha = angle(sig);
-    start_idx = ((k-1)*(samples_per_frame/overlap))+1;
-    end_idx = start_idx + samples_per_frame-1;
-    mag(start_idx:end_idx) = mag(start_idx:end_idx) + cur_mag;
-    pha(start_idx:end_idx) = pha(start_idx:end_idx) + cur_pha;
-    center_freq = center_freq + (bw/overlap);
+    %Start Transmission at new LO frequency
+    tx.transmitRepeat(sine());
+    % Capture data from PLUTO, read multiple times to ensure clear buffer
+    for n=1:10
+        sig = fft(rx());
+    end
+    avg_mag = 0;
+    cur_pha = 0;
+    %Average signals out 10 times to reduce noise
+    for n=1:10
+        % Remove DC Component
+        sig(1) = 0;
+        sig = fftshift(sig);
+        cur_mag = abs(sig);
+        [mMag, mIdx] = max(cur_mag);
+        avg_mag = avg_mag + mMag;
+        cur_pha = cur_pha + angle(sig(mIdx));
+    end
+    mag(k) = avg_mag / 10;
+    pha(k) = cur_pha / 10;
+    center_freq = center_freq + bw;
 end
-% Average out the overlapped signals
-mag = mag ./ overlap;
-pha = pha ./ overlap;
-% Normalize fft vector
-% mag = mag ./ max(mag);
 % Create frequency vector
-freq = linspace((min_center_freq-(bw/2)),(max_center_freq+(bw/2)),numel(mag));
+freq = linspace(min_center_freq,max_center_freq,steps);
 end
