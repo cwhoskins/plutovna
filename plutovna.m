@@ -1,6 +1,6 @@
 
 txt = "";
-help_prompt = "Please Enter VNA Mode: \nH: Help\nX: Exit\nP: Configure\nC: Calibration\nS: S-Parameter Measurement\n";
+help_prompt = "Please Enter VNA Mode: \nX: Exit\nP: Configure\nC: Calibration\nS: S-Parameter Measurement\n";
 prompt = help_prompt;
 
 % File names
@@ -67,10 +67,8 @@ while(upper(txt) ~= "X")
 
         case "X"
             disp('Exiting PlutoVNA Application')
-        case "H"
-            printf(help_prompt)
         otherwise
             disp('Could not parse input')
     end
-    prompt = "Action Completed, please enter new command:\n";
+    %prompt = "Action Completed, please enter new command:\n";
 end

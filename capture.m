@@ -6,10 +6,10 @@ min_center_freq = freq_range(1);
 max_center_freq = freq_range(2);
 samples_per_frame = 2e4;
 %Connect to PLUTO
-tx = sdrtx('Pluto','RadioID','usb:0','CenterFrequency',freq_range(1),'BasebandSampleRate',bw,'Gain',-10);
+tx = sdrtx('Pluto','RadioID','usb:0','CenterFrequency',freq_range(1),'BasebandSampleRate',bw,'Gain',0);
 rx=sdrrx(   'Pluto','RadioID', 'usb:0','OutputDataType','double',...
             'BasebandSampleRate', bw, 'SamplesPerFrame',samples_per_frame,...
-            'GainSource','Manual', 'Gain', 20);   
+            'GainSource','Manual', 'Gain', 5);   
 steps = ceil((max_center_freq -min_center_freq) / bw);
 center_freq = min_center_freq;
 mag = zeros(steps,1);
